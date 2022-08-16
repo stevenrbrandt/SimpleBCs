@@ -1,0 +1,14 @@
+# Schedule definitions for thorn SimpleBCS
+
+Schedule group RegisterAndApplySimpleBCSs in MoL_PostStep
+{
+} "Register and apply the BCs for this Thorn"
+
+Schedule group ApplyBCs as ApplySimpleBCSs in RegisterAndApplySimpleBCSs
+{
+} "Turn on BCs"
+
+Schedule RegisterSimpleBCs in RegisterAndApplySimpleBCSs before ApplySimpleBCSs
+{
+    LANG: C
+} "Do the registration"

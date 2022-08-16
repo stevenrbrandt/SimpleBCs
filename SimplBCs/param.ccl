@@ -1,0 +1,11 @@
+# Parameter definitions for thorn SimpleBCs
+
+CCTK_STRING bc_string "The BC string" STEERABLE = RECOVER
+{
+  .* :: "bc_name: gf1 gf2 ..."
+} "The BC string"
+
+CCTK_BOOLEAN verbose "Verbose output" STEERABLE = RECOVER
+{
+  : :: "do verbose?"
+} false

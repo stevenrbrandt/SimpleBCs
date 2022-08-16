@@ -1,0 +1,8 @@
+CCTK_STRING HamiltonianVarString "Hamiltonian constraint variable name" STEERABLE = RECOVER
+{
+  "ML_BSSN::H"        :: "ML_BSSN thorn Hamiltonian constraint gridfunction name"
+  "Baikal::HGF"       :: "Baikal thorn Hamiltonian constraint gridfunction name"
+  "BaikalVacuum::HGF" :: "BaikalVacuum thorn Hamiltonian constraint gridfunction name"
+  "LeanBSSNMoL::hc"   :: "LeanBSSNMoL thorn Hamiltonian constraint gridfunction name"
+  ".+"                :: "Or use you can use your own thorn's Hamiltonian constraint gridfunction name"
+} "ML_BSSN::H"
