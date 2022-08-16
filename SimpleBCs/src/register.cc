@@ -6,6 +6,10 @@
 #include <iostream>
 #include <sstream>
 
+/*
+ * Provide an iostream for generating a CCTK_INFO() message.
+ * Output is generated when the destructor is called.
+ */
 struct CCTKINFOstream : public std::ostringstream {
     CCTKINFOstream() {}
     ~CCTKINFOstream() {
@@ -14,6 +18,11 @@ struct CCTKINFOstream : public std::ostringstream {
     }
 };
 
+/*
+ * Provide an iostream for generating a CCTK_ERROR() call.
+ * Output is generated when the destructor is called.
+ * The code will also exit when the destructor is called.
+ */
 struct CCTKERRORstream : public std::ostringstream {
     CCTKERRORstream() {}
     ~CCTKERRORstream() {
@@ -22,6 +31,10 @@ struct CCTKERRORstream : public std::ostringstream {
     }
 };
 
+/*
+ * This class represents a grid function. If the gridfunction is named "MyThorn::a",
+ * then the full_name is "MyThorn::a", the name is "a", and the thorn name is "MyThorn".
+ */
 struct GF {
     std::string thorn, name, full_name;
     GF(const std::string& t,const std::string n) : thorn(t), name(n), full_name(t+"::"+n) {}
@@ -32,6 +45,10 @@ inline std::ostream& operator<<(std::ostream& o, const GF& gf) {
     return o << gf.full_name;
 }
 
+/*
+ * This class represents a Boundary Condition. It contains the name of the boundary
+ * condition and a vector of the grid functions it applies to.
+ */
 struct BC {
     std::string name;
     std::vector<GF> gfs;
@@ -46,10 +63,17 @@ inline std::ostream& operator<<(std::ostream& o,const BC& bc) {
     return o << ")";
 }
 
+/*
+ * Determine whether character c is a c-identifier character.
+ */
 inline bool is_alpha(char c) {
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c=='_';
 }
 
+/*
+ * Break a string into tokens that are either (1) a c-identifier string,
+ * a single colon (:), or a double colon. Commas and whitespace are ignored.
+ */
 std::vector<std::string> parse_bc_string(std::string s) {
     char last_c=0;
     std::string buf;
@@ -76,6 +100,9 @@ std::vector<std::string> parse_bc_string(std::string s) {
     return tokens;
 }
 
+/*
+ * Convert the list of tokens to a vector BC data structures.
+ */
 std::vector<BC> create_bcs(std::vector<std::string>&& vs,bool verbose) {
     size_t i=0;
     std::vector<BC> vb;
@@ -102,7 +129,9 @@ std::vector<BC> create_bcs(std::vector<std::string>&& vs,bool verbose) {
     return vb;
 }
 
-
+/*
+ * Register all the boundary conditions described by the bc_string.
+ */
 void RegisterSimpleBCs(CCTK_ARGUMENTS) {
     DECLARE_CCTK_ARGUMENTS_RegisterSimpleBCs;
     DECLARE_CCTK_PARAMETERS;
