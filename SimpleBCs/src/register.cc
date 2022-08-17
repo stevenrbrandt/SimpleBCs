@@ -6,6 +6,8 @@
 #include <iostream>
 #include <sstream>
 
+const size_t max_num_bc = 10;
+
 /*
  * Provide an iostream for generating a CCTK_INFO() message.
  * Output is generated when the destructor is called.
@@ -36,13 +38,14 @@ struct CCTKERRORstream : public std::ostringstream {
  * then the full_name is "MyThorn::a", the name is "a", and the thorn name is "MyThorn".
  */
 struct GF {
-    std::string thorn, name, full_name;
-    GF(const std::string& t,const std::string n) : thorn(t), name(n), full_name(t+"::"+n) {}
+    std::string name;
+    int groupId;
+    GF(const std::string& n) : name(n), groupId(CCTK_GroupIndex(n.c_str()) {}
     ~GF() {}
 };
 
 inline std::ostream& operator<<(std::ostream& o, const GF& gf) {
-    return o << gf.full_name;
+    return o << gf.name << "(" << gf.groupId << ")";
 }
 
 /*
@@ -64,72 +67,6 @@ inline std::ostream& operator<<(std::ostream& o,const BC& bc) {
 }
 
 /*
- * Determine whether character c is a c-identifier character.
- */
-inline bool is_alpha(char c) {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c=='_';
-}
-
-/*
- * Break a string into tokens that are either (1) a c-identifier string,
- * a single colon (:), or a double colon. Commas and whitespace are ignored.
- */
-std::vector<std::string> parse_bc_string(std::string s) {
-    char last_c=0;
-    std::string buf;
-    std::vector<std::string> tokens;
-    for(size_t i=0;i<s.size();i++) {
-        char c = s[i];
-        if(c == ':' && last_c == ':') {
-            buf.push_back(c);
-        } else if(is_alpha(c) && is_alpha(last_c)) {
-            buf.push_back(c);
-        } else if(c == ':' || is_alpha(c)) {
-            if(buf.size() > 0) tokens.push_back(buf);
-            buf.clear();
-            buf.push_back(c);
-        } else if(c == ',' || c == ' ' || c == '\t' || c == '\r' || c == '\n') {
-            ; // ignore
-        } else {
-            CCTKERRORstream sout;
-            sout << "Illegal character in input: '" << c << "'" << std::endl;
-        }
-        last_c = c;
-    }
-    if(buf.size() > 0) tokens.push_back(buf);
-    return tokens;
-}
-
-/*
- * Convert the list of tokens to a vector BC data structures.
- */
-std::vector<BC> create_bcs(std::vector<std::string>&& vs,bool verbose) {
-    size_t i=0;
-    std::vector<BC> vb;
-    vb.push_back(BC("none"));
-    while(i < vs.size()) {
-        if(is_alpha(vs.at(i).at(0)) && vs.at(i+1) == ":") {
-            BC bc(vs.at(i));
-            vb.push_back(bc);
-            i += 2;
-        } else if(is_alpha(vs.at(i).at(0)) && vs.at(i+1) == "::" && is_alpha(vs.at(i+2).at(0))) {
-            GF gf(vs.at(i), vs.at(i+2));
-            vb.at(vb.size()-1).gfs.push_back(gf);
-            i += 3;
-        } else {
-            i += 1;
-        }
-    }
-    if(verbose) {
-        CCTKINFOstream sout;
-        sout << "BCs to be applied by SimpleBCs:" << std::endl;
-        for(size_t i=0;i<vb.size();i++)
-            sout << "vb[" << i << "]=" << vb[i] << std::endl;
-    }
-    return vb;
-}
-
-/*
  * Register all the boundary conditions described by the bc_string.
  */
 void RegisterSimpleBCs(CCTK_ARGUMENTS) {
@@ -139,7 +76,25 @@ void RegisterSimpleBCs(CCTK_ARGUMENTS) {
     static bool init = true;
     static std::vector<BC> bcs;
     if(init) {
-        bcs = create_bcs(parse_bc_string(bc_string), verbose);
+        for(size_t i=0;i<max_num_bc;i++) {
+            std::string bc = bc_name[i];
+            if(bc.size() > 0) {
+                BC bc(bc);
+                std::istringstream gstr(bc_groups[i]);
+                std::strin gn;
+                while(gstr >> gn) {
+                    GF gf(gn);
+                    if(gf.groupId < 0) {
+                        CCTKERRORstream() << "Invalid group name: " << gn;
+                    }
+                    bc.gfs.push_back(gf);
+                }
+                if(bc.gfs.size() > 0) {
+                    bcs.push_back(bc);
+                    CCTKINFOstream() << "Adding " << bc_name[i];
+                }
+            }
+        }
         init = false;
     }
     int ierr = 0;

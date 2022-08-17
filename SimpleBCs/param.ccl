@@ -1,8 +1,13 @@
 # Parameter definitions for thorn SimpleBCs
 
-CCTK_STRING bc_string "The BC string" STEERABLE = RECOVER
+CCTK_STRING bc_name[10] "A list of boundary condition names" STEERABLE = RECOVER
 {
-  .* :: "bc_name: gf1 gf2 ..."
+  "[a-zA-Z][a-zA-Z]*" :: "A boundary condition name"
+} "The BC string"
+
+CCTK_STRING bc_groups[10] "For each bc_name, a list of groups" STEERABLE = RECOVER
+{
+  "\s*\w+::\w+(\s+\w+::\w+)*\s*" :: "A list of groups delimited by whitespace, e.g. MyThorn::a MyThorn::b"
 } "The BC string"
 
 CCTK_BOOLEAN verbose "Verbose output" STEERABLE = RECOVER
