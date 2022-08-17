@@ -34,18 +34,18 @@ struct CCTKERRORstream : public std::ostringstream {
 };
 
 /*
- * This class represents a grid function. If the gridfunction is named "MyThorn::a",
- * then the full_name is "MyThorn::a", the name is "a", and the thorn name is "MyThorn".
+ * This class represents a grid function. Both the full name "MyThorn::a" and
+ * the group id are stored.
  */
 struct GF {
     std::string name;
     int groupId;
-    GF(const std::string& n) : name(n), groupId(CCTK_GroupIndex(n.c_str()) {}
+    GF(const std::string& n) : name(n), groupId(CCTK_GroupIndex(n.c_str())) {}
     ~GF() {}
 };
 
 inline std::ostream& operator<<(std::ostream& o, const GF& gf) {
-    return o << gf.name << "(" << gf.groupId << ")";
+    return o << gf.name << "(groupId=" << gf.groupId << ")";
 }
 
 /*
@@ -55,7 +55,9 @@ inline std::ostream& operator<<(std::ostream& o, const GF& gf) {
 struct BC {
     std::string name;
     std::vector<GF> gfs;
-    BC(const std::string& n) : name(n) {}
+    BC(const std::string& n) : name(n) {
+        if(n == "") name = "?";
+    }
     ~BC() {}
 };
 
@@ -77,22 +79,24 @@ void RegisterSimpleBCs(CCTK_ARGUMENTS) {
     static std::vector<BC> bcs;
     if(init) {
         for(size_t i=0;i<max_num_bc;i++) {
-            std::string bc = bc_name[i];
-            if(bc.size() > 0) {
-                BC bc(bc);
-                std::istringstream gstr(bc_groups[i]);
-                std::strin gn;
-                while(gstr >> gn) {
-                    GF gf(gn);
-                    if(gf.groupId < 0) {
-                        CCTKERRORstream() << "Invalid group name: " << gn;
-                    }
-                    bc.gfs.push_back(gf);
+            std::string bcn = bc_name[i];
+            BC bc(bcn);
+            std::istringstream gstr(bc_groups[i]);
+            std::string gn;
+            while(gstr >> gn) {
+                GF gf(gn);
+                if(gf.groupId < 0) {
+                    CCTKERRORstream() << "Invalid group name: " << gn;
                 }
-                if(bc.gfs.size() > 0) {
-                    bcs.push_back(bc);
-                    CCTKINFOstream() << "Adding " << bc_name[i];
+                bc.gfs.push_back(gf);
+            }
+            if(bcn.size() > 0 && bc.gfs.size() > 0) {
+                bcs.push_back(bc);
+                if(verbose) {
+                    CCTKINFOstream() << "Adding " << bc;
                 }
+            } else if(bc.gfs.size() > 0) {
+                CCTKERRORstream() << "Boundary condition with no name at index i=" << i <<": " << bc;
             }
         }
         init = false;
@@ -101,12 +105,15 @@ void RegisterSimpleBCs(CCTK_ARGUMENTS) {
     for(auto& bc : bcs) {
         const char *bc_name = bc.name.c_str();
         for(auto& gf : bc.gfs) {
-            const char *gf_name = gf.full_name.c_str();
+            const char *gf_name = gf.name.c_str();
             ierr = Boundary_SelectGroupForBC(cctkGH, CCTK_ALL_FACES, 1, -1, gf_name, bc_name);
             if(verbose) {
-                CCTKINFOstream sout;
-                sout << "select for bc: " << bc_name << " -> " << gf_name << std::endl;
+                CCTKINFOstream() << "select for bc: " << bc_name << " -> " << gf_name;
             }
+            if(ierr < 0)
+                CCTKERRORstream() << "select for bc: " << bc_name << " -> " << gf_name << " failed!";
+            ierr = CCTK_SyncGroupI(cctkGH,gf.groupId);
+            if(ierr < 0) CCTKERRORstream() << "Sync for group " << gf << " failed!";
         }
     }
 }

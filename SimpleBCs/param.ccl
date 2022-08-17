@@ -2,13 +2,13 @@
 
 CCTK_STRING bc_name[10] "A list of boundary condition names" STEERABLE = RECOVER
 {
-  "[a-zA-Z][a-zA-Z]*" :: "A boundary condition name"
-} "The BC string"
+  "([a-zA-Z][a-zA-Z]*|)" :: "A boundary condition name"
+} ""
 
 CCTK_STRING bc_groups[10] "For each bc_name, a list of groups" STEERABLE = RECOVER
 {
-  "\s*\w+::\w+(\s+\w+::\w+)*\s*" :: "A list of groups delimited by whitespace, e.g. MyThorn::a MyThorn::b"
-} "The BC string"
+  "(\s*\w+::\w+(\s+\w+::\w+)*\s*|)" :: "A list of groups delimited by whitespace, e.g. MyThorn::a MyThorn::b"
+} ""
 
 CCTK_BOOLEAN verbose "Verbose output" STEERABLE = RECOVER
 {
