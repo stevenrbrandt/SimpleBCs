@@ -5,6 +5,7 @@
 #include <vector>
 #include <iostream>
 #include <sstream>
+#include <carpet.hh>
 
 const size_t max_num_bc = 10;
 
@@ -78,6 +79,9 @@ void RegisterSimpleBCs(CCTK_ARGUMENTS) {
     static bool init = true;
     static std::vector<BC> bcs;
     if(init) {
+        if(Carpet::is_local_mode()) {
+            CCTKERRORstream() << "This code must run in local mode: " << __FILE__ << ":" <<__LINE__;
+        }
         for(size_t i=0;i<max_num_bc;i++) {
             std::string bcn = bc_name[i];
             BC bc(bcn);
@@ -106,14 +110,14 @@ void RegisterSimpleBCs(CCTK_ARGUMENTS) {
         const char *bc_name = bc.name.c_str();
         for(auto& gf : bc.gfs) {
             const char *gf_name = gf.name.c_str();
-            if(is_local_mode()) {
+            if(Carpet::is_local_mode()) {
                 ierr = Boundary_SelectGroupForBC(cctkGH, CCTK_ALL_FACES, 1, -1, gf_name, bc_name);
                 if(verbose)
                     CCTKINFOstream() << "select for bc: " << bc_name << " -> " << gf_name;
                 if(ierr < 0)
                     CCTKERRORstream() << "select for bc: " << bc_name << " -> " << gf_name << " failed!";
             }
-            if(is_level_mode()) {
+            if(Carpet::is_level_mode()) {
                 ierr = CCTK_SyncGroupI(cctkGH,gf.groupId);
                 if(ierr < 0) CCTKERRORstream() << "Sync for group " << gf << " failed!";
             }

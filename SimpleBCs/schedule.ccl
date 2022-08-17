@@ -3,10 +3,6 @@
 Schedule group RegisterAndApplySimpleBCs in MoL_PostStep
 {
 } "Register and apply the BCs for this Thorn"
-Schedule group RegisterAndApplySimpleBCs as SyncSimpleBCs in MoL_PostStep after RegisterAndApplySimpleBCs
-{
-    OPTIONS: LEVEL
-} "Register and apply the BCs for this Thorn"
 
 Schedule group ApplyBCs as ApplySimpleBCs in RegisterAndApplySimpleBCs
 {
@@ -16,3 +12,8 @@ Schedule RegisterSimpleBCs in RegisterAndApplySimpleBCs before ApplySimpleBCs
 {
     LANG: C
 } "Do the registration"
+Schedule RegisterSimpleBCs as SyncSimpleBCs in RegisterAndApplySimpleBCs before RegisterSimpleBCs
+{
+    LANG: C
+    OPTIONS: LEVEL
+} "Do the sync"
