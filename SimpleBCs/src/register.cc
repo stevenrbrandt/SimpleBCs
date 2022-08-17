@@ -106,14 +106,17 @@ void RegisterSimpleBCs(CCTK_ARGUMENTS) {
         const char *bc_name = bc.name.c_str();
         for(auto& gf : bc.gfs) {
             const char *gf_name = gf.name.c_str();
-            ierr = Boundary_SelectGroupForBC(cctkGH, CCTK_ALL_FACES, 1, -1, gf_name, bc_name);
-            if(verbose) {
-                CCTKINFOstream() << "select for bc: " << bc_name << " -> " << gf_name;
+            if(is_local_mode()) {
+                ierr = Boundary_SelectGroupForBC(cctkGH, CCTK_ALL_FACES, 1, -1, gf_name, bc_name);
+                if(verbose)
+                    CCTKINFOstream() << "select for bc: " << bc_name << " -> " << gf_name;
+                if(ierr < 0)
+                    CCTKERRORstream() << "select for bc: " << bc_name << " -> " << gf_name << " failed!";
             }
-            if(ierr < 0)
-                CCTKERRORstream() << "select for bc: " << bc_name << " -> " << gf_name << " failed!";
-            ierr = CCTK_SyncGroupI(cctkGH,gf.groupId);
-            if(ierr < 0) CCTKERRORstream() << "Sync for group " << gf << " failed!";
+            if(is_level_mode()) {
+                ierr = CCTK_SyncGroupI(cctkGH,gf.groupId);
+                if(ierr < 0) CCTKERRORstream() << "Sync for group " << gf << " failed!";
+            }
         }
     }
 }
